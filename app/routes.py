@@ -1,41 +1,52 @@
-from flask import request, jsonify, current_app
+# app/routes.py
+from flask import Blueprint, current_app, request, jsonify
 from werkzeug.utils import secure_filename
-from . import db
-from .models import DisplayRequest
 import os
+from .models import db, DisplayRequest
+from datetime import datetime
 
-from .utils import process_image
+routes = Blueprint('routes', __name__)
 
-from flask import current_app as app
+UPLOAD_FOLDER = "app/static/images"
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
 
-@app.route("/display/text", methods=["POST"])
-def display_text():
-    data = request.get_json()
-    text = data.get("text", "").strip()
-    if not text:
-        return jsonify({"error": "Text is required"}), 400
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-    entry = DisplayRequest(type="text", content=text)
-    db.session.add(entry)
-    db.session.commit()
+@routes.route('/api/upload-image', methods=['POST'])
+def upload_image():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image part'}), 400
 
-    return jsonify({"message": "Text added to queue"}), 201
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
 
-@app.route("/display/image", methods=["POST"])
-def display_image():
-    if "image" not in request.files:
-        return jsonify({"error": "No image uploaded"}), 400
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+        
+    if file:
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        filename = f"{timestamp}_{filename}"
+        image_folder = os.path.join(current_app.root_path, 'static', 'images')
+        os.makedirs(image_folder, exist_ok=True)
 
-    image = request.files["image"]
-    filename = secure_filename(image.filename)
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-    image.save(filepath)
+        filepath = os.path.join(image_folder, filename)
+        file.save(filepath)
+        
+        relative_path = filepath.replace("\\", "/")
+        display_request = DisplayRequest(image_path=relative_path)
+        db.session.add(display_request)
+        db.session.commit()
 
-    # Optionally process it here
-    processed_path = process_image(filepath)
+        return jsonify({'message': 'Image uploaded', 'path': relative_path}), 200
 
-    entry = DisplayRequest(type="image", content=os.path.basename(processed_path))
-    db.session.add(entry)
-    db.session.commit()
-
-    return jsonify({"message": "Image added to queue"}), 201
+@routes.route('/api/latest-image', methods=['GET'])
+def get_latest_image():
+    latest = DisplayRequest.query.order_by(DisplayRequest.timestamp.desc()).first()
+    if latest:
+        return jsonify({
+            "image_path": latest.image_path
+        }), 200
+    return jsonify({"error": "No image found"}), 404
