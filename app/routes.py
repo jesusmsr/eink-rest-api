@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 import os
 
 from app.image_processing import process_image_for_epaper
-from app.utils import process_image_to_acep_palette
+from app.utils import get_local_ip, process_image_to_acep_palette
 from .models import BatteryStatus, db, DisplayRequest
 from datetime import datetime
 from PIL import Image
@@ -13,6 +13,7 @@ routes = Blueprint('routes', __name__)
 
 UPLOAD_FOLDER = os.path.join("app", "static", "images")
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "bmp"}
+LOCAL_IP = get_local_ip()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -44,7 +45,7 @@ def upload_image():
         processed_path = os.path.join(image_folder, processed_filename)
         process_image_for_epaper(original_path, processed_path)
 
-        url = f"http://192.168.1.111:5000/static/images/{processed_filename}"
+        url = f"http://{LOCAL_IP}:5000/static/images/{processed_filename}"
         display_request = DisplayRequest(image_path=url)
         db.session.add(display_request)
         db.session.commit()

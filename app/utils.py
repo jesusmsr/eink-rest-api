@@ -1,5 +1,6 @@
 from PIL import Image
 import os
+import socket
 
 ACEP_PALETTE = [
     (0, 0, 0),        # Negro
@@ -39,3 +40,14 @@ def process_image_to_acep_palette(input_path, output_path, size=(800, 480)):
             pixels[x, y] = mapped_color
 
     processed_img.save(output_path, format='BMP')
+    
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # No se envía nada realmente, sólo se usa para obtener la IP
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"  # fallback
