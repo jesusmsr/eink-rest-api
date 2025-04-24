@@ -2,13 +2,16 @@
 from flask import Blueprint, current_app, request, jsonify
 from werkzeug.utils import secure_filename
 import os
+
+from app.utils import process_image_to_acep_palette
 from .models import db, DisplayRequest
 from datetime import datetime
+from PIL import Image
 
 routes = Blueprint('routes', __name__)
 
-UPLOAD_FOLDER = "app/static/images"
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
+UPLOAD_FOLDER = os.path.join("app", "static", "images")
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "bmp"}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -24,7 +27,7 @@ def upload_image():
 
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
-        
+
     if file:
         filename = secure_filename(file.filename)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -32,15 +35,19 @@ def upload_image():
         image_folder = os.path.join(current_app.root_path, 'static', 'images')
         os.makedirs(image_folder, exist_ok=True)
 
-        filepath = os.path.join(image_folder, filename)
-        file.save(filepath)
-        
-        relative_path = filepath.replace("\\", "/")
-        display_request = DisplayRequest(image_path=relative_path)
+        original_path = os.path.join(image_folder, filename)
+        file.save(original_path)
+
+        bmp_filename = filename.rsplit('.', 1)[0] + "_processed.bmp"
+        bmp_output_path = os.path.join(image_folder, bmp_filename)
+        process_image_to_acep_palette(original_path, bmp_output_path)
+
+        url = f"http://192.168.1.111:5000/static/images/{bmp_filename}"
+        display_request = DisplayRequest(image_path=url)
         db.session.add(display_request)
         db.session.commit()
 
-        return jsonify({'message': 'Image uploaded', 'path': relative_path}), 200
+        return jsonify({'message': 'Image uploaded and processed', 'path': url}), 200
 
 @routes.route('/api/latest-image', methods=['GET'])
 def get_latest_image():
