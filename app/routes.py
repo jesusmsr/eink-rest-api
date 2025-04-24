@@ -5,7 +5,7 @@ import os
 
 from app.image_processing import process_image_for_epaper
 from app.utils import process_image_to_acep_palette
-from .models import db, DisplayRequest
+from .models import BatteryStatus, db, DisplayRequest
 from datetime import datetime
 from PIL import Image
 
@@ -59,3 +59,20 @@ def get_latest_image():
             "image_path": latest.image_path
         }), 200
     return jsonify({"error": "No image found"}), 404
+
+@routes.route('/api/battery', methods=['POST'])
+def battery_status():
+    data = request.get_json()
+    voltage = data.get('voltage')
+    
+    if voltage is None:
+        return jsonify({"error": "Missing voltage parameter"}), 400
+
+    # Aquí podrías guardar en base de datos si quieres un histórico
+    print(f"Battery voltage received: {voltage}V")
+    battery_status = BatteryStatus(voltage=voltage)
+    db.session.add(battery_status)
+    db.session.commit()
+    
+    return jsonify({"message": "Battery status received", "voltage": voltage}), 200
+
