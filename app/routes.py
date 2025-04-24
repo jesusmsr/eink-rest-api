@@ -3,6 +3,7 @@ from flask import Blueprint, current_app, request, jsonify
 from werkzeug.utils import secure_filename
 import os
 
+from app.image_processing import process_image_for_epaper
 from app.utils import process_image_to_acep_palette
 from .models import db, DisplayRequest
 from datetime import datetime
@@ -36,13 +37,14 @@ def upload_image():
         os.makedirs(image_folder, exist_ok=True)
 
         original_path = os.path.join(image_folder, filename)
+        
         file.save(original_path)
 
-        bmp_filename = filename.rsplit('.', 1)[0] + "_processed.bmp"
-        bmp_output_path = os.path.join(image_folder, bmp_filename)
-        process_image_to_acep_palette(original_path, bmp_output_path)
+        processed_filename = filename.rsplit(".", 1)[0] + "_processed.bmp"
+        processed_path = os.path.join(image_folder, processed_filename)
+        process_image_for_epaper(original_path, processed_path)
 
-        url = f"http://192.168.1.111:5000/static/images/{bmp_filename}"
+        url = f"http://192.168.1.111:5000/static/images/{processed_filename}"
         display_request = DisplayRequest(image_path=url)
         db.session.add(display_request)
         db.session.commit()
