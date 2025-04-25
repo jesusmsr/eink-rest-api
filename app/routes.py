@@ -77,3 +77,13 @@ def battery_status():
     
     return jsonify({"message": "Battery status received", "voltage": voltage}), 200
 
+@routes.route('/api/battery-latest', methods=['GET'])
+def battery_latest():
+
+    latest = BatteryStatus.query.order_by(BatteryStatus.timestamp.desc()).first()
+    if latest:
+        return jsonify({
+            "voltage_level": latest.voltage
+        }), 200
+    return jsonify({"error": "No data"}), 404
+
