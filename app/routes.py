@@ -83,7 +83,8 @@ def battery_latest():
     latest = BatteryStatus.query.order_by(BatteryStatus.timestamp.desc()).first()
     if latest:
         return jsonify({
-            "voltage_level": latest.voltage
+            "voltage_level": latest.voltage,
+            "timestamp": latest.timestamp
         }), 200
     return jsonify({"error": "No data"}), 404
 
