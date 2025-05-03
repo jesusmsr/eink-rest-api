@@ -26,7 +26,7 @@ def closest_acep_color(rgb):
             closest = color
     return closest
 
-def process_image_to_acep_palette(input_path, output_path, size=(800, 480)):
+def process_image_to_acep_palette(input_path, output_path, size=(480, 800)):
     img = Image.open(input_path).convert('RGB')
     img = img.resize(size)
     
