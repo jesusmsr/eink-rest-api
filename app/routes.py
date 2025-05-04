@@ -8,6 +8,8 @@ from app.utils import get_local_ip
 from .models import BatteryStatus, db, DisplayRequest
 from datetime import datetime
 from PIL import Image
+import random
+
 
 routes = Blueprint('routes', __name__)
 
@@ -47,21 +49,56 @@ def upload_image():
 
         PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:5000")
         url = f"{PUBLIC_BASE_URL}/static/images/{processed_filename}"
-        display_request = DisplayRequest(image_path=url)
+        display_request = DisplayRequest(image_path=url, pending=True)
         db.session.add(display_request)
         db.session.commit()
 
         return jsonify({'message': 'Image uploaded and processed', 'path': url}), 200
 
+from datetime import datetime
+
+@routes.route('/api/image-last-used', methods=['GET'])
+def get_last_used_image():
+    last = DisplayRequest.query.filter(DisplayRequest.was_sent == True).order_by(DisplayRequest.last_sent_at.desc()).first()
+    if last:
+        return jsonify({
+            "image_path": last.image_path,
+            "timestamp": last.last_sent_at
+        }), 200
+    return jsonify({"error": "No image has been used yet"}), 404
+
 @routes.route('/api/latest-image', methods=['GET'])
 def get_latest_image():
-    latest = DisplayRequest.query.order_by(DisplayRequest.timestamp.desc()).first()
-    if latest:
+    is_esp = request.headers.get("X-Device") == "esp32"
+
+    pending = DisplayRequest.query.filter_by(pending=True).order_by(DisplayRequest.timestamp.asc()).first()
+    if pending:
+        if is_esp:
+            pending.pending = False
+            pending.was_sent = True
+            pending.last_sent_at = datetime.utcnow()
+            db.session.commit()
         return jsonify({
-            "image_path": latest.image_path,
-            "timestamp": latest.timestamp
+            "image_path": pending.image_path,
+            "timestamp": pending.timestamp
         }), 200
-    return jsonify({"error": "No image found"}), 404
+
+    # Si no hay pendientes, mostrar random SOLO al ESP32 y registrar como usada
+    if is_esp:
+        all_images = DisplayRequest.query.all()
+        if all_images:
+            selected = random.choice(all_images)
+            selected.was_sent = True
+            selected.last_sent_at = datetime.utcnow()
+            db.session.commit()
+            return jsonify({
+                "image_path": selected.image_path,
+                "timestamp": selected.timestamp
+            }), 200
+
+    return jsonify({"error": "No images available"}), 404
+
+
 
 @routes.route('/api/battery', methods=['POST'])
 def battery_status():

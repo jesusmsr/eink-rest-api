@@ -3,13 +3,18 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
 from dotenv import load_dotenv
+from flask_migrate import Migrate
+
 
 db = SQLAlchemy()
 load_dotenv()
 
 def create_app():
     app = Flask(__name__)
+    migrate = Migrate(app, db)
+
     CORS(app, origins="https://app.jsanr.dev") 
+    #CORS(app) 
     app.config['UPLOAD_FOLDER'] = os.path.join('app', 'static', 'images')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

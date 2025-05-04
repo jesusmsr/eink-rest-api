@@ -5,6 +5,9 @@ class DisplayRequest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     image_path = db.Column(db.String(256), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    pending = db.Column(db.Boolean, default=True)
+    was_sent = db.Column(db.Boolean, default=False)
+    last_sent_at = db.Column(db.DateTime, nullable=True)
 
 class BatteryStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)
