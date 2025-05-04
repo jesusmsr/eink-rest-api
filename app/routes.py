@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 import os
 
 from app.image_processing import process_image_for_epaper
-from app.utils import get_local_ip, process_image_to_acep_palette
+from app.utils import get_local_ip
 from .models import BatteryStatus, db, DisplayRequest
 from datetime import datetime
 from PIL import Image
@@ -57,7 +57,8 @@ def get_latest_image():
     latest = DisplayRequest.query.order_by(DisplayRequest.timestamp.desc()).first()
     if latest:
         return jsonify({
-            "image_path": latest.image_path
+            "image_path": latest.image_path,
+            "timestamp": latest.timestamp
         }), 200
     return jsonify({"error": "No image found"}), 404
 

@@ -18,7 +18,7 @@ def closest_color(rgb):
 def process_image_for_epaper(input_path, output_path):
     with Image.open(input_path) as img:
         img = img.convert('RGB')
-        img = resize_and_crop(img, 800, 480) 
+        img = resize_and_crop(img, 480, 800) 
 
         # Dithered image to the ACeP color palette using Floyd-Steinberg
         dithered = img.copy()
