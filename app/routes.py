@@ -45,7 +45,8 @@ def upload_image():
         processed_path = os.path.join(image_folder, processed_filename)
         process_image_for_epaper(original_path, processed_path)
 
-        url = f"http://{LOCAL_IP}:5000/static/images/{processed_filename}"
+        PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:5000")
+        url = f"{PUBLIC_BASE_URL}/static/images/{processed_filename}"
         display_request = DisplayRequest(image_path=url)
         db.session.add(display_request)
         db.session.commit()

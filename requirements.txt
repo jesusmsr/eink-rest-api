@@ -2,3 +2,4 @@ Flask
 Flask_SQLAlchemy
 Pillow
 flask-cors
+python-dotenv
