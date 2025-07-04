@@ -8,6 +8,12 @@ class DisplayRequest(db.Model):
     pending = db.Column(db.Boolean, default=True)
     was_sent = db.Column(db.Boolean, default=False)
     last_sent_at = db.Column(db.DateTime, nullable=True)
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "image_path": self.image_path,
+            "timestamp": self.timestamp.isoformat()
+        }
 
 class BatteryStatus(db.Model):
     id = db.Column(db.Integer, primary_key=True)

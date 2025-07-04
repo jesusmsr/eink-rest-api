@@ -9,6 +9,7 @@ from .models import BatteryStatus, db, DisplayRequest
 from datetime import datetime
 from PIL import Image
 import random
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 
 routes = Blueprint('routes', __name__)
@@ -19,6 +20,57 @@ LOCAL_IP = get_local_ip()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Auth
+@routes.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if username == 'admin' and password == os.getenv("ADMIN_PWD"):  
+        access_token = create_access_token(identity=username)
+        return jsonify(access_token=access_token), 200
+    return jsonify({"msg": "Bad username or password"}), 401
+
+# Protected
+@routes.route('/api/all-images', methods=['GET'])
+@jwt_required()
+def all_images():
+    all_images = DisplayRequest.query.order_by(DisplayRequest.timestamp.desc()).all()
+    return jsonify([image.to_dict() for image in all_images]), 200
+
+    import os
+
+@routes.route('/api/delete-image/<int:image_id>', methods=['DELETE'])
+@jwt_required()
+def delete_image(image_id):
+    # Buscar la entrada por ID
+    image_entry = DisplayRequest.query.get(image_id)
+    if not image_entry:
+        return jsonify({"error": "Imagen no encontrada"}), 404
+
+    try:
+        # Borrar los archivos físicos
+        processed_path = os.path.join(current_app.root_path, 'static', 'images', 
+                                      os.path.basename(image_entry.image_path))
+
+        original_name = processed_path.replace('_processed.bmp', '')
+        if os.path.exists(processed_path):
+            os.remove(processed_path)
+        if os.path.exists(original_name):
+            os.remove(original_name)
+
+        # Borrar de la base de datos
+        db.session.delete(image_entry)
+        db.session.commit()
+
+        return jsonify({"message": "Imagen eliminada correctamente"}), 200
+    except Exception as e:
+        print(f"Error deleting image: {e}")
+        return jsonify({"error": "No se pudo eliminar la imagen"}), 500
+
+# End protected
 
 @routes.route('/api/upload-image', methods=['POST'])
 def upload_image():
@@ -126,4 +178,3 @@ def battery_latest():
             "timestamp": latest.timestamp
         }), 200
     return jsonify({"error": "No data"}), 404
-
