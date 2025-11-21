@@ -16,16 +16,17 @@ def closest_color(rgb):
     return min(ACeP_COLORS, key=lambda c: (r - c[0])**2 + (g - c[1])**2 + (b - c[2])**2)
 
 def process_image_for_epaper(input_path, output_path):
-    TARGET_W = 480
-    TARGET_H = 800
+    # ✅ Match physical display: 800x480 landscape
+    TARGET_W = 800
+    TARGET_H = 480
 
     with Image.open(input_path) as img:
         img = img.convert("RGB")
 
-        # 2️⃣ Luego adaptamos a 800×480 (horizontal)
+        # Resize and crop to 800x480
         img = resize_and_crop(img, TARGET_W, TARGET_H)
 
-        # 3️⃣ Dithering ACeP
+        # Dithering ACeP (keep as is)
         dithered = img.copy()
         pixels = dithered.load()
 
@@ -46,8 +47,8 @@ def process_image_for_epaper(input_path, output_path):
                         b = min(255, max(0, int(b + quant_error[2] * factor)))
                         pixels[nx, ny] = (r, g, b)
 
-        # 4️⃣ Guardamos ya como 800×480 listo para GxEPD2
         dithered.save(output_path, format="BMP")
+
 
 def resize_and_crop(img, target_width, target_height):
     img_ratio = img.width / img.height
