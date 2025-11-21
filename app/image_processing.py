@@ -16,8 +16,8 @@ def closest_color(rgb):
     return min(ACeP_COLORS, key=lambda c: (r - c[0])**2 + (g - c[1])**2 + (b - c[2])**2)
 
 def process_image_for_epaper(input_path, output_path):
-    TARGET_W = 800
-    TARGET_H = 480
+    TARGET_W = 480
+    TARGET_H = 800
 
     with Image.open(input_path) as img:
         img = img.convert("RGB")
