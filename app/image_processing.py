@@ -22,9 +22,6 @@ def process_image_for_epaper(input_path, output_path):
     with Image.open(input_path) as img:
         img = img.convert("RGB")
 
-        # 1️⃣ Rotamos la imagen 90º para que se vea vertical correctamente en el panel
-        img = img.rotate(90, expand=True)
-
         # 2️⃣ Luego adaptamos a 800×480 (horizontal)
         img = resize_and_crop(img, TARGET_W, TARGET_H)
 
